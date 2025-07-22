@@ -24,6 +24,7 @@
       </div>
 
       <!-- 影像显示区域 -->
+<<<<<<< HEAD
       <div v-else class="image-canvas h-full relative" ref="imageCanvas">
         <!-- 影像渲染区域 -->
         <div class="canvas-placeholder h-full flex items-center justify-center">
@@ -37,13 +38,30 @@
             </div>
           </div>
         </div>
+=======
+      <div v-else class="image-canvas h-full relative">
+        <!-- Canvas渲染区域 -->
+        <canvas 
+          ref="imageCanvas"
+          class="w-full h-full cursor-grab"
+          @mouseenter="updateMousePosition"
+          @mousemove="updateMousePosition"
+          @mouseleave="clearMousePosition"
+        ></canvas>
+>>>>>>> origin/feature/week2-core-functionality
 
         <!-- 影像信息覆盖层 -->
         <div class="viewer-overlay top-4 left-4">
           <div class="text-xs space-y-1">
+<<<<<<< HEAD
             <div>患者: {{ imageInfo?.patientName || '张三' }}</div>
             <div>序列: T1WI</div>
             <div>层厚: 1.0mm</div>
+=======
+            <div>患者: {{ imageInfo?.patientName || 'Unknown' }}</div>
+            <div>模态: {{ imageInfo?.modality || 'N/A' }}</div>
+            <div>尺寸: {{ imageInfo?.columns }}×{{ imageInfo?.rows }}</div>
+>>>>>>> origin/feature/week2-core-functionality
           </div>
         </div>
 
@@ -63,7 +81,11 @@
         </div>
 
         <!-- 鼠标位置信息覆盖层 -->
+<<<<<<< HEAD
         <div class="viewer-overlay bottom-4 right-4">
+=======
+        <div v-if="mousePosition.x >= 0" class="viewer-overlay bottom-4 right-4">
+>>>>>>> origin/feature/week2-core-functionality
           <div class="text-xs space-y-1">
             <div>X: {{ mousePosition.x }}</div>
             <div>Y: {{ mousePosition.y }}</div>
@@ -77,7 +99,11 @@
         <div class="text-center space-y-4">
           <el-icon class="text-4xl text-primary-400 animate-spin"><Loading /></el-icon>
           <div>
+<<<<<<< HEAD
             <p class="text-lg font-medium text-medical-text-primary">正在加载影像...</p>
+=======
+            <p class="text-lg font-medium text-medical-text-primary">正在解析DICOM文件...</p>
+>>>>>>> origin/feature/week2-core-functionality
             <p class="text-sm text-medical-text-muted">请稍候</p>
           </div>
         </div>
@@ -92,7 +118,11 @@
           <div>
             <p class="text-lg font-medium text-medical-text-primary mb-2">加载失败</p>
             <p class="text-sm text-medical-text-muted mb-4">{{ error }}</p>
+<<<<<<< HEAD
             <el-button type="primary" @click="clearError">重新加载</el-button>
+=======
+            <el-button type="primary" @click="retry">重新加载</el-button>
+>>>>>>> origin/feature/week2-core-functionality
           </div>
         </div>
       </div>
@@ -101,13 +131,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+<<<<<<< HEAD
 import { Picture, Upload, Loading, WarningFilled, Monitor } from '@element-plus/icons-vue'
+=======
+import { Picture, Upload, Loading, WarningFilled } from '@element-plus/icons-vue'
+import { DicomParser, DicomImage } from '@/services/dicom/DicomParser'
+import { ImageViewerService, ViewportState } from '@/services/viewer/ImageViewerService'
+>>>>>>> origin/feature/week2-core-functionality
 
 // 响应式数据
 const viewerContainer = ref<HTMLElement>()
-const imageCanvas = ref<HTMLElement>()
+const imageCanvas = ref<HTMLCanvasElement>()
 const hasImage = ref(false)
 const isLoading = ref(false)
 const error = ref<string>('')
@@ -117,11 +153,36 @@ const imageInfo = ref<any>(null)
 const zoomLevel = ref(100)
 const windowWidth = ref(400)
 const windowCenter = ref(40)
+<<<<<<< HEAD
 const mousePosition = ref({ x: 0, y: 0 })
 const pixelValue = ref(0)
 
+=======
+const mousePosition = ref({ x: -1, y: -1 })
+const pixelValue = ref(0)
+
+// 服务实例
+const viewerService = new ImageViewerService()
+let currentDicomImage: DicomImage | null = null
+
+// 暴露给父组件的方法
+defineExpose({
+  loadDicomImage,
+  resetView: () => viewerService.resetViewport(),
+  fitToWindow: () => viewerService.fitToWindow(),
+  actualSize: () => viewerService.actualSize(),
+  zoom: (factor: number) => viewerService.zoom(factor),
+  rotate: (angle: number) => viewerService.rotate(angle),
+  flipHorizontal: () => viewerService.flip(true),
+  flipVertical: () => viewerService.flip(false),
+  invert: () => viewerService.invert(),
+  applyWindowLevel: (center: number, width: number) => applyWindowLevel(center, width)
+})
+
+>>>>>>> origin/feature/week2-core-functionality
 // 生命周期
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
   initializeViewer()
 })
 
@@ -129,16 +190,32 @@ onUnmounted(() => {
   cleanup()
 })
 
+// 监听视口状态变化
+watch(() => viewerService.getViewportState(), (state: ViewportState) => {
+  zoomLevel.value = Math.round(state.scale * 100)
+}, { deep: true })
+
 // 初始化查看器
 const initializeViewer = () => {
   console.log('初始化影像查看器')
-  // TODO: 初始化Cornerstone.js
+  
+  if (imageCanvas.value) {
+    // 设置Canvas尺寸
+    const container = viewerContainer.value
+    if (container) {
+      imageCanvas.value.width = container.clientWidth
+      imageCanvas.value.height = container.clientHeight
+    }
+    
+    // 初始化查看器服务
+    viewerService.initialize(imageCanvas.value)
+  }
 }
 
 // 清理资源
 const cleanup = () => {
   console.log('清理影像查看器资源')
-  // TODO: 清理Cornerstone.js资源
+  viewerService.destroy()
 }
 
 // 打开文件对话框
@@ -164,35 +241,113 @@ const loadDicomFile = async (file: File) => {
     isLoading.value = true
     error.value = ''
 
-    console.log('加载DICOM文件:', file.name)
+    console.log('开始加载DICOM文件:', file.name)
 
-    // TODO: 使用dcmjs解析DICOM文件
-    // TODO: 使用Cornerstone.js渲染影像
+    // 使用DicomParser解析文件
+    const dicomImage = await DicomParser.parseDicomFile(file)
+    
+    // 设置图像信息
+    imageInfo.value = dicomImage.metadata
+    currentDicomImage = dicomImage
+    
+    // 设置窗宽窗位
+    const wc = Array.isArray(dicomImage.metadata.windowCenter) 
+      ? dicomImage.metadata.windowCenter[0] 
+      : dicomImage.metadata.windowCenter || 128
+    const ww = Array.isArray(dicomImage.metadata.windowWidth) 
+      ? dicomImage.metadata.windowWidth[0] 
+      : dicomImage.metadata.windowWidth || 256
+    
+    windowCenter.value = wc
+    windowWidth.value = ww
 
-    // 模拟加载过程
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    // 模拟影像信息
-    imageInfo.value = {
-      patientName: '测试患者',
-      studyDate: '2024-01-01',
-      width: 512,
-      height: 512
-    }
-
+    // 在查看器中显示图像
+    viewerService.setDicomImage(dicomImage)
+    
     hasImage.value = true
-    ElMessage.success('DICOM文件加载成功')
+    ElMessage.success(`DICOM文件加载成功: ${file.name}`)
+    
   } catch (err) {
     error.value = err instanceof Error ? err.message : '加载文件失败'
     ElMessage.error(error.value)
+    console.error('DICOM文件加载失败:', err)
   } finally {
     isLoading.value = false
   }
 }
 
-// 清除错误
-const clearError = () => {
+// 加载DICOM图像（供外部调用）
+const loadDicomImage = async (dicomImage: DicomImage) => {
+  try {
+    imageInfo.value = dicomImage.metadata
+    currentDicomImage = dicomImage
+    
+    // 设置窗宽窗位
+    const wc = Array.isArray(dicomImage.metadata.windowCenter) 
+      ? dicomImage.metadata.windowCenter[0] 
+      : dicomImage.metadata.windowCenter || 128
+    const ww = Array.isArray(dicomImage.metadata.windowWidth) 
+      ? dicomImage.metadata.windowWidth[0] 
+      : dicomImage.metadata.windowWidth || 256
+    
+    windowCenter.value = wc
+    windowWidth.value = ww
+
+    // 在查看器中显示图像
+    viewerService.setDicomImage(dicomImage)
+    
+    hasImage.value = true
+    
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '显示图像失败'
+    ElMessage.error(error.value)
+  }
+}
+
+// 应用窗宽窗位
+const applyWindowLevel = (center: number, width: number) => {
+  if (currentDicomImage) {
+    windowCenter.value = center
+    windowWidth.value = width
+    
+    // 重新应用窗宽窗位
+    DicomParser.applyWindowLevel(currentDicomImage, center, width)
+    
+    // 重新渲染
+    viewerService.setDicomImage(currentDicomImage)
+  }
+}
+
+// 更新鼠标位置
+const updateMousePosition = (event: MouseEvent) => {
+  if (!imageCanvas.value || !currentDicomImage) return
+  
+  const rect = imageCanvas.value.getBoundingClientRect()
+  const x = Math.floor(event.clientX - rect.left)
+  const y = Math.floor(event.clientY - rect.top)
+  
+  mousePosition.value = { x, y }
+  
+  // 计算像素值（简化版本）
+  // 实际实现需要考虑视口变换
+  if (x >= 0 && x < currentDicomImage.width && y >= 0 && y < currentDicomImage.height) {
+    const pixelIndex = y * currentDicomImage.width + x
+    if (pixelIndex < currentDicomImage.pixelData.length) {
+      pixelValue.value = currentDicomImage.pixelData[pixelIndex]
+    }
+  }
+}
+
+// 清除鼠标位置
+const clearMousePosition = () => {
+  mousePosition.value = { x: -1, y: -1 }
+  pixelValue.value = 0
+}
+
+// 重试加载
+const retry = () => {
   error.value = ''
+  openFileDialog()
 }
 </script>
 
@@ -201,6 +356,7 @@ const clearError = () => {
   background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
 }
 
+<<<<<<< HEAD
 .canvas-placeholder {
   border: 2px dashed rgba(14, 165, 233, 0.3);
   border-radius: 12px;
@@ -212,5 +368,15 @@ const clearError = () => {
 .canvas-placeholder:hover {
   border-color: rgba(14, 165, 233, 0.5);
   background: rgba(14, 165, 233, 0.05);
+=======
+canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+canvas:active {
+  cursor: grabbing !important;
+>>>>>>> origin/feature/week2-core-functionality
 }
 </style>

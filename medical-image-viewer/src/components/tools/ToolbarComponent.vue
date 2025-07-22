@@ -160,6 +160,24 @@ import {
   InfoFilled
 } from '@element-plus/icons-vue'
 
+// Emits
+const emit = defineEmits<{
+  toolChanged: [tool: string]
+  openFile: []
+  saveImage: []
+  resetView: []
+  fitToWindow: []
+  toggleInvert: []
+  showImageInfo: []
+}>()
+
+// Props
+interface Props {
+  imageViewer?: any
+}
+
+const props = defineProps<Props>()
+
 // 当前激活的工具
 const activeTool = ref<string>('pan')
 
@@ -167,7 +185,9 @@ const activeTool = ref<string>('pan')
 const setActiveTool = (tool: string) => {
   activeTool.value = tool
   ElMessage.info(`切换到${getToolName(tool)}工具`)
-  // TODO: 通知工具管理器切换工具
+
+  // 通知父组件工具切换
+  emit('toolChanged', tool)
 }
 
 // 获取工具名称
@@ -185,46 +205,28 @@ const getToolName = (tool: string): string => {
 
 // 文件操作
 const openFile = () => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.dcm,.dicom'
-  input.multiple = false
-
-  input.onchange = event => {
-    const files = (event.target as HTMLInputElement).files
-    if (files && files.length > 0) {
-      ElMessage.success(`选择文件: ${files[0].name}`)
-      // TODO: 加载DICOM文件
-    }
-  }
-
-  input.click()
+  emit('openFile')
 }
 
 const saveImage = () => {
-  ElMessage.info('保存功能开发中...')
-  // TODO: 实现图像保存功能
+  emit('saveImage')
 }
 
 // 视图操作
 const resetView = () => {
-  ElMessage.info('重置视图')
-  // TODO: 重置视口到初始状态
+  emit('resetView')
 }
 
 const fitToWindow = () => {
-  ElMessage.info('适应窗口')
-  // TODO: 调整图像适应窗口大小
+  emit('fitToWindow')
 }
 
 const toggleInvert = () => {
-  ElMessage.info('切换反色')
-  // TODO: 切换图像反色显示
+  emit('toggleInvert')
 }
 
 const showImageInfo = () => {
-  ElMessage.info('显示影像信息')
-  // TODO: 显示详细的影像信息对话框
+  emit('showImageInfo')
 }
 </script>
 
