@@ -1,151 +1,315 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { DicomParser } from '@/services/dicom/DicomParser'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { DicomParser, TRANSFER_SYNTAXES, DEFAULT_PARSE_OPTIONS } from '@/services/dicom/DicomParser'
+
+// Mock dicom-parser
+vi.mock('dicom-parser', () => ({
+  parseDicom: vi.fn().mockReturnValue({
+    elements: {
+      x00100010: { tag: 'x00100010' }, // Patient Name
+      x00100020: { tag: 'x00100020' }, // Patient ID
+      x00080020: { tag: 'x00080020' }, // Study Date
+      x00080060: { tag: 'x00080060' }, // Modality
+      x00280010: { tag: 'x00280010' }, // Rows
+      x00280011: { tag: 'x00280011' }, // Columns
+      x00280100: { tag: 'x00280100' }, // Bits Allocated
+      x00280101: { tag: 'x00280101' }, // Bits Stored
+      x00280103: { tag: 'x00280103' }, // Pixel Representation
+      x00280002: { tag: 'x00280002' }, // Samples Per Pixel
+      x00280004: { tag: 'x00280004' }, // Photometric Interpretation
+      x00281050: { tag: 'x00281050' }, // Window Center
+      x00281051: { tag: 'x00281051' }, // Window Width
+      x00281052: { tag: 'x00281052' }, // Rescale Intercept
+      x00281053: { tag: 'x00281053' }, // Rescale Slope
+      x00020010: { tag: 'x00020010' }, // Transfer Syntax UID
+      x7fe00010: { tag: 'x7fe00010', dataOffset: 1000, length: 1024 } // Pixel Data
+    },
+    string: vi.fn((tag: string) => {
+      const mockValues: Record<string, string> = {
+        x00100010: 'Test Patient',
+        x00100020: 'TEST001',
+        x00080020: '20240101',
+        x00080060: 'CT',
+        x00280010: '512',
+        x00280011: '512',
+        x00280100: '16',
+        x00280101: '16',
+        x00280103: '0',
+        x00280002: '1',
+        x00280004: 'MONOCHROME2',
+        x00281050: '40',
+        x00281051: '400',
+        x00281052: '0',
+        x00281053: '1',
+        x00020010: TRANSFER_SYNTAXES.EXPLICIT_VR_LITTLE_ENDIAN,
+        x00280008: '1'
+      }
+      return mockValues[tag]
+    }),
+    byteArray: new Uint8Array(2048)
+  })
+}))
 
 describe('DicomParser', () => {
   let mockFile: File
+  let mockDicomData: Uint8Array
 
   beforeEach(() => {
-    // 创建模拟的DICOM文件
-    const mockArrayBuffer = new ArrayBuffer(1024)
-    const mockBlob = new Blob([mockArrayBuffer], { type: 'application/dicom' })
+    // 创建模拟的DICOM文件数据
+    mockDicomData = new Uint8Array(2048)
+    // 添加DICM前缀
+    mockDicomData[128] = 0x44 // D
+    mockDicomData[129] = 0x49 // I
+    mockDicomData[130] = 0x43 // C
+    mockDicomData[131] = 0x4D // M
+
+    const mockBlob = new Blob([mockDicomData], { type: 'application/dicom' })
     mockFile = new File([mockBlob], 'test.dcm', { type: 'application/dicom' })
+  })
+
+  describe('validateDicomFile', () => {
+    it('应该能够验证有效的DICOM文件', async () => {
+      const result = await DicomParser.validateDicomFile(mockFile)
+
+      expect(result.isValid).toBe(true)
+      expect(result.hasPixelData).toBe(true)
+      expect(result.errors).toHaveLength(0)
+    })
+
+    it('应该检测空文件', async () => {
+      const emptyFile = new File([], 'empty.dcm', { type: 'application/dicom' })
+      const result = await DicomParser.validateDicomFile(emptyFile)
+
+      expect(result.isValid).toBe(false)
+      expect(result.errors).toContain('文件为空')
+    })
+
+    it('应该警告大文件', async () => {
+      // 创建一个大文件的模拟
+      const largeData = new Uint8Array(3 * 1024 * 1024 * 1024) // 3GB
+      const largeFile = new File([largeData], 'large.dcm', { type: 'application/dicom' })
+
+      const result = await DicomParser.validateDicomFile(largeFile)
+      expect(result.warnings.some(w => w.includes('文件过大'))).toBe(true)
+    })
   })
 
   describe('parseDicomFile', () => {
     it('应该能够解析有效的DICOM文件', async () => {
-      // 由于需要真实的DICOM数据，这里只测试错误处理
-      try {
-        await DicomParser.parseDicomFile(mockFile)
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error)
-        expect((error as Error).message).toContain('DICOM文件解析失败')
-      }
+      const result = await DicomParser.parseDicomFile(mockFile)
+
+      expect(result).toBeDefined()
+      expect(result.metadata.patientName).toBe('Test Patient')
+      expect(result.metadata.patientId).toBe('TEST001')
+      expect(result.metadata.modality).toBe('CT')
+      expect(result.width).toBe(512)
+      expect(result.height).toBe(512)
+      expect(result.frames).toBe(1)
     })
 
-    it('应该在文件为空时抛出错误', async () => {
-      const emptyFile = new File([], 'empty.dcm', { type: 'application/dicom' })
-      
-      try {
-        await DicomParser.parseDicomFile(emptyFile)
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error)
+    it('应该支持自定义解析选项', async () => {
+      const options = {
+        includePixelData: false,
+        validateIntegrity: false,
+        generateHistogram: true
       }
+
+      const result = await DicomParser.parseDicomFile(mockFile, options)
+      expect(result.pixelData.length).toBe(0)
+    })
+
+    it('应该在内存限制超出时抛出错误', async () => {
+      const options = {
+        maxMemoryUsage: 0.001 // 0.001MB
+      }
+
+      await expect(DicomParser.parseDicomFile(mockFile, options)).rejects.toThrow('文件过大')
+    })
+
+    it('应该调用进度回调', async () => {
+      const progressCallback = vi.fn()
+      const options = { progressCallback }
+
+      await DicomParser.parseDicomFile(mockFile, options)
+      expect(progressCallback).toHaveBeenCalledWith(20)
+      expect(progressCallback).toHaveBeenCalledWith(100)
     })
   })
 
-  describe('extractMetadata', () => {
-    it('应该能够提取基本的DICOM元数据', () => {
-      const mockDataset = {
-        PatientName: { Alphabetic: 'Test Patient' },
-        PatientID: 'TEST001',
-        StudyDate: '20240101',
-        Modality: 'CT',
-        Rows: 512,
-        Columns: 512,
-        BitsAllocated: 16,
-        WindowCenter: 40,
-        WindowWidth: 400
-      }
+  describe('传输语法支持', () => {
+    it('应该返回支持的传输语法列表', () => {
+      const supported = DicomParser.getSupportedTransferSyntaxes()
 
-      // 使用反射访问私有方法进行测试
-      const metadata = (DicomParser as any).extractMetadata(mockDataset)
-
-      expect(metadata.patientName).toBe('Test Patient')
-      expect(metadata.patientId).toBe('TEST001')
-      expect(metadata.studyDate).toBe('20240101')
-      expect(metadata.modality).toBe('CT')
-      expect(metadata.rows).toBe(512)
-      expect(metadata.columns).toBe(512)
-      expect(metadata.bitsAllocated).toBe(16)
-      expect(metadata.windowCenter).toBe(40)
-      expect(metadata.windowWidth).toBe(400)
+      expect(supported).toContain(TRANSFER_SYNTAXES.IMPLICIT_VR_LITTLE_ENDIAN)
+      expect(supported).toContain(TRANSFER_SYNTAXES.EXPLICIT_VR_LITTLE_ENDIAN)
+      expect(Array.isArray(supported)).toBe(true)
     })
 
-    it('应该为缺失的字段提供默认值', () => {
-      const emptyDataset = {}
-      const metadata = (DicomParser as any).extractMetadata(emptyDataset)
+    it('应该检查传输语法是否支持', () => {
+      expect(DicomParser.isTransferSyntaxSupported(TRANSFER_SYNTAXES.EXPLICIT_VR_LITTLE_ENDIAN)).toBe(true)
+      expect(DicomParser.isTransferSyntaxSupported('unknown')).toBe(false)
+    })
 
-      expect(metadata.patientName).toBe('Unknown')
-      expect(metadata.patientId).toBe('')
-      expect(metadata.rows).toBe(0)
-      expect(metadata.columns).toBe(0)
-      expect(metadata.bitsAllocated).toBe(8)
-      expect(metadata.windowCenter).toBe(128)
-      expect(metadata.windowWidth).toBe(256)
+    it('应该返回传输语法描述', () => {
+      const description = DicomParser.getTransferSyntaxDescription(TRANSFER_SYNTAXES.EXPLICIT_VR_LITTLE_ENDIAN)
+      expect(description).toBe('Explicit VR Little Endian')
+
+      const unknownDescription = DicomParser.getTransferSyntaxDescription('unknown')
+      expect(unknownDescription).toContain('Unknown')
     })
   })
 
-  describe('createImageData', () => {
-    it('应该能够创建8位图像数据', () => {
-      const pixelData = new Uint8Array([0, 128, 255, 64])
-      const metadata = {
-        columns: 2,
-        rows: 2,
-        windowCenter: 128,
-        windowWidth: 256,
-        rescaleIntercept: 0,
-        rescaleSlope: 1
-      }
+  describe('窗宽窗位功能', () => {
+    let mockDicomImage: any
 
-      const imageData = (DicomParser as any).createImageData(pixelData, metadata)
-
-      expect(imageData).toBeInstanceOf(ImageData)
-      expect(imageData.width).toBe(2)
-      expect(imageData.height).toBe(2)
-      expect(imageData.data.length).toBe(16) // 2x2x4 (RGBA)
+    beforeEach(async () => {
+      mockDicomImage = await DicomParser.parseDicomFile(mockFile)
     })
 
-    it('应该在无效尺寸时抛出错误', () => {
-      const pixelData = new Uint8Array([0, 128, 255, 64])
-      const metadata = {
-        columns: 0,
-        rows: 0,
-        windowCenter: 128,
-        windowWidth: 256
-      }
-
-      expect(() => {
-        (DicomParser as any).createImageData(pixelData, metadata)
-      }).toThrow('无效的图像尺寸')
-    })
-  })
-
-  describe('applyWindowLevel', () => {
     it('应该能够应用窗宽窗位调整', () => {
-      const pixelData = new Uint8Array([0, 128, 255, 64])
-      const metadata = {
-        columns: 2,
-        rows: 2,
-        rescaleIntercept: 0,
-        rescaleSlope: 1
-      }
-
-      const imageData = new ImageData(new Uint8ClampedArray(16), 2, 2)
-      const canvas = document.createElement('canvas')
-      canvas.width = 2
-      canvas.height = 2
-
-      const dicomImage = {
-        metadata,
-        pixelData,
-        imageData,
-        canvas,
-        width: 2,
-        height: 2
-      }
-
-      // 应该不抛出错误
       expect(() => {
-        DicomParser.applyWindowLevel(dicomImage, 128, 256)
+        DicomParser.applyEnhancedWindowLevel(mockDicomImage, 100, 200)
       }).not.toThrow()
+    })
+
+    it('应该创建预设窗宽窗位', () => {
+      const presets = DicomParser.createPresetWindowLevels(mockDicomImage.metadata)
+
+      expect(Array.isArray(presets)).toBe(true)
+      expect(presets.length).toBeGreaterThan(0)
+
+      // 检查CT预设
+      const lungWindow = presets.find(p => p.name === '肺窗')
+      expect(lungWindow).toBeDefined()
+      expect(lungWindow?.center).toBe(-600)
+      expect(lungWindow?.width).toBe(1600)
+    })
+  })
+
+  describe('像素值获取', () => {
+    let mockDicomImage: any
+
+    beforeEach(async () => {
+      mockDicomImage = await DicomParser.parseDicomFile(mockFile)
+    })
+
+    it('应该能够获取像素值', () => {
+      const pixelValue = DicomParser.getPixelValue(mockDicomImage, 100, 100)
+      expect(typeof pixelValue).toBe('number')
+    })
+
+    it('应该在坐标超出范围时返回null', () => {
+      const pixelValue = DicomParser.getPixelValue(mockDicomImage, -1, -1)
+      expect(pixelValue).toBeNull()
+
+      const pixelValue2 = DicomParser.getPixelValue(mockDicomImage, 1000, 1000)
+      expect(pixelValue2).toBeNull()
+    })
+
+    it('应该能够获取Hounsfield值（CT）', () => {
+      const hounsfield = DicomParser.getHounsfieldValue(mockDicomImage, 100, 100)
+      expect(typeof hounsfield).toBe('number')
+    })
+
+    it('应该在非CT图像时返回null', () => {
+      mockDicomImage.metadata.modality = 'MR'
+      const hounsfield = DicomParser.getHounsfieldValue(mockDicomImage, 100, 100)
+      expect(hounsfield).toBeNull()
+    })
+  })
+
+  describe('错误处理', () => {
+    it('应该处理解析错误', async () => {
+      // Mock解析失败
+      const { parseDicom } = await import('dicom-parser')
+      vi.mocked(parseDicom).mockImplementationOnce(() => {
+        throw new Error('解析失败')
+      })
+
+      await expect(DicomParser.parseDicomFile(mockFile)).rejects.toThrow('DICOM文件解析失败')
+    })
+
+    it('应该处理内存不足错误', async () => {
+      const options = { maxMemoryUsage: 0 }
+      await expect(DicomParser.parseDicomFile(mockFile, options)).rejects.toThrow('文件过大')
+    })
+
+    it('应该调用错误回调', async () => {
+      const errorCallback = vi.fn()
+      const options = {
+        maxMemoryUsage: 0,
+        errorCallback
+      }
+
+      try {
+        await DicomParser.parseDicomFile(mockFile, options)
+      } catch {
+        // 预期的错误
+      }
+
+      expect(errorCallback).toHaveBeenCalled()
+    })
+  })
+
+  describe('性能和内存管理', () => {
+    it('应该正确估算内存使用', async () => {
+      const validation = await DicomParser.validateDicomFile(mockFile)
+      expect(validation.estimatedSize).toBe(mockFile.size)
+    })
+
+    it('应该支持大文件处理', async () => {
+      const options = { maxMemoryUsage: 1024 } // 1GB
+
+      // 应该不抛出内存错误
+      await expect(DicomParser.parseDicomFile(mockFile, options)).resolves.toBeDefined()
+    })
+  })
+
+  describe('默认配置', () => {
+    it('应该有正确的默认解析选项', () => {
+      expect(DEFAULT_PARSE_OPTIONS.includePixelData).toBe(true)
+      expect(DEFAULT_PARSE_OPTIONS.validateIntegrity).toBe(true)
+      expect(DEFAULT_PARSE_OPTIONS.generateHistogram).toBe(false)
+      expect(DEFAULT_PARSE_OPTIONS.maxMemoryUsage).toBe(512)
     })
   })
 })
 
 describe('DicomParser 集成测试', () => {
-  it('应该能够处理完整的DICOM解析流程', () => {
-    // 这里可以添加使用真实DICOM文件的集成测试
-    // 由于需要真实的DICOM数据，暂时跳过
-    expect(true).toBe(true)
+  it('应该能够处理完整的DICOM解析流程', async () => {
+    // 创建模拟的完整DICOM文件
+    const mockData = new Uint8Array(2048)
+    mockData[128] = 0x44 // D
+    mockData[129] = 0x49 // I
+    mockData[130] = 0x43 // C
+    mockData[131] = 0x4D // M
+
+    const file = new File([mockData], 'test.dcm', { type: 'application/dicom' })
+
+    // 验证文件
+    const validation = await DicomParser.validateDicomFile(file)
+    expect(validation.isValid).toBe(true)
+
+    // 解析文件
+    const dicomImage = await DicomParser.parseDicomFile(file)
+    expect(dicomImage).toBeDefined()
+    expect(dicomImage.metadata).toBeDefined()
+    expect(dicomImage.pixelDataInfo).toBeDefined()
+
+    // 应用窗宽窗位
+    DicomParser.applyEnhancedWindowLevel(dicomImage, 100, 200)
+
+    // 获取像素值
+    const pixelValue = DicomParser.getPixelValue(dicomImage, 0, 0)
+    expect(typeof pixelValue).toBe('number')
+  })
+
+  it('应该支持不同的传输语法', () => {
+    const supportedSyntaxes = DicomParser.getSupportedTransferSyntaxes()
+    expect(supportedSyntaxes.length).toBeGreaterThan(0)
+
+    supportedSyntaxes.forEach(syntax => {
+      expect(DicomParser.isTransferSyntaxSupported(syntax)).toBe(true)
+      expect(DicomParser.getTransferSyntaxDescription(syntax)).toBeDefined()
+    })
   })
 })
