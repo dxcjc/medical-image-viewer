@@ -141,6 +141,48 @@
               <label>光度解释</label>
               <span>{{ metadata.photometricInterpretation || 'N/A' }}</span>
             </div>
+            <div class="info-item">
+              <label>传输语法</label>
+              <span class="text-xs">{{ getTransferSyntaxDescription(metadata.transferSyntaxUID) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 统计信息 -->
+      <div v-if="currentFile.dicomImage" class="info-section">
+        <div class="section-header">
+          <h4 class="text-lg font-semibold text-medical-text-primary flex items-center">
+            <el-icon class="mr-2 text-primary-400"><DataAnalysis /></el-icon>
+            统计信息
+          </h4>
+        </div>
+        <div class="section-content">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>最小像素值</label>
+              <span>{{ currentFile.dicomImage.minPixelValue?.toFixed(2) || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <label>最大像素值</label>
+              <span>{{ currentFile.dicomImage.maxPixelValue?.toFixed(2) || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <label>平均像素值</label>
+              <span>{{ currentFile.dicomImage.meanPixelValue?.toFixed(2) || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <label>标准差</label>
+              <span>{{ currentFile.dicomImage.standardDeviation?.toFixed(2) || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <label>帧数</label>
+              <span>{{ currentFile.dicomImage.frames || 1 }}</span>
+            </div>
+            <div class="info-item">
+              <label>当前帧</label>
+              <span>{{ (currentFile.dicomImage.currentFrame || 0) + 1 }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -210,9 +252,11 @@ import {
   Operation,
   Download,
   CopyDocument,
-  Refresh
+  Refresh,
+  DataAnalysis
 } from '@element-plus/icons-vue'
 import { DicomFile, FileManagerService } from '@/services/file/FileManagerService'
+import { DicomParser } from '@/services/dicom/DicomParser'
 
 // Props
 interface Props {
@@ -334,6 +378,12 @@ const copyInfo = async () => {
       ElMessage.error('复制失败')
     }
   }
+}
+
+// 获取传输语法描述
+const getTransferSyntaxDescription = (transferSyntaxUID?: string): string => {
+  if (!transferSyntaxUID) return 'N/A'
+  return DicomParser.getTransferSyntaxDescription(transferSyntaxUID)
 }
 
 // 刷新文件

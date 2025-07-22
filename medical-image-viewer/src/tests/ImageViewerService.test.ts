@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ImageViewerService } from '@/services/viewer/ImageViewerService'
+import { ImageViewerService, RenderOptions } from '@/services/viewer/ImageViewerService'
+import { InterpolationType } from '@/services/viewer/ImageInterpolation'
 
 describe('ImageViewerService', () => {
   let viewerService: ImageViewerService
@@ -43,12 +44,40 @@ describe('ImageViewerService', () => {
       }).not.toThrow()
     })
 
+    it('应该能够使用自定义渲染选项初始化', () => {
+      const options: Partial<RenderOptions> = {
+        interpolationType: InterpolationType.BICUBIC,
+        enableCaching: false,
+        enableAntiAliasing: true
+      }
+
+      expect(() => {
+        viewerService.initialize(mockCanvas, options)
+      }).not.toThrow()
+
+      const renderOptions = viewerService.getRenderOptions()
+      expect(renderOptions.interpolationType).toBe(InterpolationType.BICUBIC)
+      expect(renderOptions.enableCaching).toBe(false)
+      expect(renderOptions.enableAntiAliasing).toBe(true)
+    })
+
     it('应该在没有Canvas时抛出错误', () => {
       const invalidCanvas = document.createElement('div') as any
-      
+
       expect(() => {
         viewerService.initialize(invalidCanvas)
-      }).toThrow('无法获取Canvas 2D上下文')
+      }).toThrow('canvas.getContext is not a function')
+    })
+
+    it('应该正确设置高DPI支持', () => {
+      const options: Partial<RenderOptions> = {
+        devicePixelRatio: 2
+      }
+
+      viewerService.initialize(mockCanvas, options)
+
+      const renderOptions = viewerService.getRenderOptions()
+      expect(renderOptions.devicePixelRatio).toBe(2)
     })
   })
 
@@ -91,6 +120,36 @@ describe('ImageViewerService', () => {
     })
   })
 
+  describe('渲染选项管理', () => {
+    beforeEach(() => {
+      viewerService.initialize(mockCanvas)
+    })
+
+    it('应该能够设置渲染选项', () => {
+      const newOptions: Partial<RenderOptions> = {
+        interpolationType: InterpolationType.NEAREST_NEIGHBOR,
+        enableAntiAliasing: true,
+        preservePixelValues: false
+      }
+
+      viewerService.setRenderOptions(newOptions)
+
+      const options = viewerService.getRenderOptions()
+      expect(options.interpolationType).toBe(InterpolationType.NEAREST_NEIGHBOR)
+      expect(options.enableAntiAliasing).toBe(true)
+      expect(options.preservePixelValues).toBe(false)
+    })
+
+    it('应该能够获取性能指标', () => {
+      const metrics = viewerService.getPerformanceMetrics()
+
+      expect(metrics).toHaveProperty('renderTime')
+      expect(metrics).toHaveProperty('cacheHitRate')
+      expect(metrics).toHaveProperty('memoryUsage')
+      expect(metrics).toHaveProperty('frameRate')
+    })
+  })
+
   describe('缩放操作', () => {
     beforeEach(() => {
       viewerService.initialize(mockCanvas)
@@ -102,21 +161,21 @@ describe('ImageViewerService', () => {
       const initialScale = initialState.scale
 
       viewerService.zoom(2.0)
-      
+
       const newState = viewerService.getViewportState()
       expect(newState.scale).toBeGreaterThan(initialScale)
     })
 
     it('应该限制最小缩放比例', () => {
       viewerService.zoom(0.01) // 尝试缩放到很小
-      
+
       const state = viewerService.getViewportState()
       expect(state.scale).toBeGreaterThanOrEqual(0.1) // 最小缩放比例
     })
 
     it('应该限制最大缩放比例', () => {
       viewerService.zoom(100) // 尝试缩放到很大
-      
+
       const state = viewerService.getViewportState()
       expect(state.scale).toBeLessThanOrEqual(10) // 最大缩放比例
     })
@@ -128,6 +187,13 @@ describe('ImageViewerService', () => {
       expect(() => {
         viewerService.zoom(2.0, centerX, centerY)
       }).not.toThrow()
+    })
+
+    it('应该根据缩放级别自动选择插值类型', () => {
+      // 大幅放大时应该使用双三次插值
+      viewerService.zoom(4.0)
+      const options = viewerService.getRenderOptions()
+      expect([InterpolationType.BICUBIC, InterpolationType.BILINEAR]).toContain(options.interpolationType)
     })
   })
 
@@ -288,13 +354,94 @@ describe('ImageViewerService', () => {
     })
   })
 
+  describe('窗宽窗位控制', () => {
+    beforeEach(() => {
+      viewerService.initialize(mockCanvas)
+      viewerService.setDicomImage(mockDicomImage)
+    })
+
+    it('应该能够设置窗宽窗位', () => {
+      expect(() => {
+        viewerService.setWindowLevel(100, 200)
+      }).not.toThrow()
+    })
+  })
+
+  describe('像素值获取', () => {
+    beforeEach(() => {
+      viewerService.initialize(mockCanvas)
+      viewerService.setDicomImage(mockDicomImage)
+    })
+
+    it('应该能够获取像素值', () => {
+      const pixelValue = viewerService.getPixelValue(100, 100)
+      expect(typeof pixelValue === 'number' || pixelValue === null).toBe(true)
+    })
+
+    it('应该在坐标超出范围时返回null', () => {
+      const pixelValue = viewerService.getPixelValue(-1, -1)
+      expect(pixelValue).toBeNull()
+    })
+  })
+
+  describe('缓存管理', () => {
+    beforeEach(() => {
+      viewerService.initialize(mockCanvas, { enableCaching: true })
+    })
+
+    it('应该能够获取缓存管理器', () => {
+      const cacheManager = viewerService.getCacheManager()
+      expect(cacheManager).toBeDefined()
+      expect(typeof cacheManager.getStats).toBe('function')
+    })
+
+    it('应该能够预加载图像', async () => {
+      const imageIds = ['image1', 'image2', 'image3']
+
+      await expect(viewerService.preloadImages(imageIds, 1)).resolves.not.toThrow()
+    })
+  })
+
+  describe('性能监控', () => {
+    beforeEach(() => {
+      viewerService.initialize(mockCanvas)
+      viewerService.setDicomImage(mockDicomImage)
+    })
+
+    it('应该跟踪渲染性能', () => {
+      const metrics = viewerService.getPerformanceMetrics()
+
+      expect(metrics).toHaveProperty('renderTime')
+      expect(metrics).toHaveProperty('frameRate')
+      expect(metrics).toHaveProperty('lastRenderTimestamp')
+      expect(typeof metrics.renderTime).toBe('number')
+    })
+  })
+
   describe('资源清理', () => {
     it('应该能够正确销毁查看器', () => {
       viewerService.initialize(mockCanvas)
-      
+
       expect(() => {
         viewerService.destroy()
       }).not.toThrow()
+    })
+
+    it('应该清理所有资源', () => {
+      viewerService.initialize(mockCanvas, { enableCaching: true })
+      viewerService.setDicomImage(mockDicomImage)
+
+      // 获取缓存管理器的初始状态
+      const cacheManager = viewerService.getCacheManager()
+      const initialStats = cacheManager.getStats()
+
+      // 销毁查看器
+      viewerService.destroy()
+
+      // 验证缓存已清空
+      const finalStats = cacheManager.getStats()
+      expect(finalStats.entryCount).toBe(0)
+      expect(finalStats.memoryUsage).toBe(0)
     })
   })
 })

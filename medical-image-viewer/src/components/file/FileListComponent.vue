@@ -8,6 +8,11 @@
           <el-tooltip content="上传DICOM文件" placement="top">
             <el-button type="primary" size="small" @click="uploadFiles">
               <el-icon><Upload /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <el-tooltip content="批量上传" placement="top">
+          <el-button size="small" @click="batchUpload">
+            <el-icon><FolderOpened /></el-icon>
             </el-button>
           </el-tooltip>
           <el-tooltip content="清空列表" placement="top">
@@ -41,16 +46,59 @@
       </div>
     </div>
 
+    <!-- 拖拽上传区域 -->
+    <div
+      v-if="files.length === 0"
+      class="drag-upload-area"
+      :class="{ 'drag-over': isDragOver }"
+      @drop="handleDrop"
+      @dragover="handleDragOver"
+      @dragenter="handleDragEnter"
+      @dragleave="handleDragLeave"
+    >
+      <div class="drag-upload-content">
+        <el-icon class="text-6xl text-primary-400 mb-4"><Upload /></el-icon>
+        <h4 class="text-xl font-semibold text-medical-text-primary mb-2">拖拽上传DICOM文件</h4>
+        <p class="text-medical-text-muted mb-4">将DICOM文件拖拽到此处，或点击选择文件</p>
+        <el-button type="primary" @click="uploadFiles">
+          <el-icon><FolderOpened /></el-icon>
+          选择文件
+        </el-button>
+        <div class="mt-4 text-xs text-medical-text-muted">
+          支持 .dcm, .dicom 格式 | 支持批量上传
+        </div>
+      </div>
+    </div>
+
     <!-- 文件列表 -->
-    <div class="file-list-content flex-1 overflow-y-auto">
+    <div v-else class="file-list-content flex-1 overflow-y-auto">
+      <!-- 批量操作栏 -->
+      <div v-if="selectedFiles.length > 0" class="batch-actions p-3 bg-primary-500/10 border-b border-medical-border">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-medical-text-primary">
+            已选择 {{ selectedFiles.length }} 个文件
+          </span>
+          <div class="flex items-center space-x-2">
+            <el-button size="small" @click="batchDelete">
+              <el-icon><Delete /></el-icon>
+              批量删除
+            </el-button>
+            <el-button size="small" @click="batchExport">
+              <el-icon><Download /></el-icon>
+              批量导出
+            </el-button>
+            <el-button size="small" @click="clearSelection">
+              取消选择
+            </el-button>
+          </div>
+        </div>
+      </div>
+
       <div v-if="filteredFiles.length === 0" class="empty-state p-8 text-center">
-        <el-icon class="text-4xl text-medical-text-muted mb-3"><FolderOpened /></el-icon>
-        <p class="text-medical-text-muted">
-          {{ files.length === 0 ? '暂无文件' : '未找到匹配的文件' }}
-        </p>
-        <el-button v-if="files.length === 0" type="primary" @click="uploadFiles" class="mt-3">
-          <el-icon><Upload /></el-icon>
-          上传DICOM文件
+        <el-icon class="text-4xl text-medical-text-muted mb-3"><Search /></el-icon>
+        <p class="text-medical-text-muted">未找到匹配的文件</p>
+        <el-button type="primary" @click="clearSearch" class="mt-3">
+          清除搜索
         </el-button>
       </div>
 
@@ -59,8 +107,11 @@
           v-for="file in filteredFiles"
           :key="file.id"
           class="file-item p-3 border-b border-medical-border hover:bg-medical-hover transition-colors cursor-pointer"
-          :class="{ 'file-item-active': file.id === currentFileId }"
-          @click="selectFile(file.id)"
+          :class="{
+            'file-item-active': file.id === currentFileId,
+            'file-item-selected': selectedFiles.includes(file.id)
+          }"
+          @click="selectFile(file.id, $event)"
         >
           <div class="flex items-start space-x-3">
             <!-- 文件图标 -->
@@ -211,6 +262,10 @@ const searchQuery = ref('')
 const filteredFiles = ref<DicomFile[]>([])
 const showInfoDialog = ref(false)
 const selectedFileInfo = ref<any>(null)
+const selectedFiles = ref<string[]>([])
+const isDragOver = ref(false)
+const uploadProgress = ref<{ [key: string]: number }>({})
+const isUploading = ref(false)
 
 // 计算属性
 const stats = computed(() => props.fileManager.getFileStats())
@@ -245,6 +300,34 @@ const handleSearch = () => {
   }
 }
 
+// 拖拽处理
+const handleDragEnter = (event: DragEvent) => {
+  event.preventDefault()
+  isDragOver.value = true
+}
+
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault()
+}
+
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault()
+  // 只有当离开整个拖拽区域时才设置为false
+  if (!event.currentTarget?.contains(event.relatedTarget as Node)) {
+    isDragOver.value = false
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault()
+  isDragOver.value = false
+
+  const files = event.dataTransfer?.files
+  if (files && files.length > 0) {
+    await processFiles(files)
+  }
+}
+
 // 上传文件
 const uploadFiles = () => {
   const input = document.createElement('input')
@@ -255,16 +338,69 @@ const uploadFiles = () => {
   input.onchange = async (event) => {
     const files = (event.target as HTMLInputElement).files
     if (files && files.length > 0) {
-      try {
-        await props.fileManager.addFiles(files)
-        ElMessage.success(`成功添加 ${files.length} 个文件`)
-      } catch (error) {
-        ElMessage.error(error instanceof Error ? error.message : '添加文件失败')
-      }
+      await processFiles(files)
     }
   }
 
   input.click()
+}
+
+// 批量上传
+const batchUpload = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.dcm,.dicom'
+  input.multiple = true
+  input.webkitdirectory = true // 允许选择文件夹
+
+  input.onchange = async (event) => {
+    const files = (event.target as HTMLInputElement).files
+    if (files && files.length > 0) {
+      await processFiles(files)
+    }
+  }
+
+  input.click()
+}
+
+// 处理文件
+const processFiles = async (fileList: FileList) => {
+  const validFiles = Array.from(fileList).filter(file =>
+    file.name.toLowerCase().endsWith('.dcm') ||
+    file.name.toLowerCase().endsWith('.dicom') ||
+    file.type === 'application/dicom'
+  )
+
+  if (validFiles.length === 0) {
+    ElMessage.warning('未找到有效的DICOM文件')
+    return
+  }
+
+  if (validFiles.length !== fileList.length) {
+    ElMessage.warning(`过滤了 ${fileList.length - validFiles.length} 个非DICOM文件`)
+  }
+
+  isUploading.value = true
+
+  try {
+    // 显示上传进度
+    const progressNotification = ElMessage({
+      message: `正在上传 ${validFiles.length} 个文件...`,
+      type: 'info',
+      duration: 0,
+      showClose: true
+    })
+
+    await props.fileManager.addFiles(validFiles)
+
+    progressNotification.close()
+    ElMessage.success(`成功添加 ${validFiles.length} 个文件`)
+
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '添加文件失败')
+  } finally {
+    isUploading.value = false
+  }
 }
 
 // 清空文件
@@ -282,9 +418,105 @@ const clearFiles = async () => {
 }
 
 // 选择文件
-const selectFile = (fileId: string) => {
-  props.fileManager.setCurrentFile(fileId)
-  emit('fileSelected', fileId)
+const selectFile = (fileId: string, event?: MouseEvent) => {
+  if (event?.ctrlKey || event?.metaKey) {
+    // Ctrl/Cmd + 点击：多选
+    toggleFileSelection(fileId)
+  } else if (event?.shiftKey && selectedFiles.value.length > 0) {
+    // Shift + 点击：范围选择
+    selectFileRange(fileId)
+  } else {
+    // 普通点击：单选
+    selectedFiles.value = []
+    props.fileManager.setCurrentFile(fileId)
+    emit('fileSelected', fileId)
+  }
+}
+
+// 切换文件选择状态
+const toggleFileSelection = (fileId: string) => {
+  const index = selectedFiles.value.indexOf(fileId)
+  if (index > -1) {
+    selectedFiles.value.splice(index, 1)
+  } else {
+    selectedFiles.value.push(fileId)
+  }
+}
+
+// 范围选择文件
+const selectFileRange = (endFileId: string) => {
+  const startIndex = filteredFiles.value.findIndex(f => f.id === selectedFiles.value[selectedFiles.value.length - 1])
+  const endIndex = filteredFiles.value.findIndex(f => f.id === endFileId)
+
+  if (startIndex !== -1 && endIndex !== -1) {
+    const minIndex = Math.min(startIndex, endIndex)
+    const maxIndex = Math.max(startIndex, endIndex)
+
+    for (let i = minIndex; i <= maxIndex; i++) {
+      const fileId = filteredFiles.value[i].id
+      if (!selectedFiles.value.includes(fileId)) {
+        selectedFiles.value.push(fileId)
+      }
+    }
+  }
+}
+
+// 清除选择
+const clearSelection = () => {
+  selectedFiles.value = []
+}
+
+// 批量删除
+const batchDelete = async () => {
+  if (selectedFiles.value.length === 0) return
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedFiles.value.length} 个文件吗？`,
+      '批量删除',
+      { type: 'warning' }
+    )
+
+    selectedFiles.value.forEach(fileId => {
+      props.fileManager.removeFile(fileId)
+    })
+
+    selectedFiles.value = []
+    ElMessage.success('批量删除完成')
+  } catch {
+    // 用户取消
+  }
+}
+
+// 批量导出
+const batchExport = () => {
+  if (selectedFiles.value.length === 0) return
+
+  const exportData = selectedFiles.value.map(fileId => {
+    return props.fileManager.exportFileInfo(fileId)
+  }).filter(info => info !== null)
+
+  if (exportData.length === 0) {
+    ElMessage.warning('没有可导出的文件信息')
+    return
+  }
+
+  const dataStr = JSON.stringify(exportData, null, 2)
+  const dataBlob = new Blob([dataStr], { type: 'application/json' })
+
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(dataBlob)
+  link.download = `batch_export_${new Date().toISOString().split('T')[0]}.json`
+  link.click()
+
+  URL.revokeObjectURL(link.href)
+  ElMessage.success(`已导出 ${exportData.length} 个文件的信息`)
+}
+
+// 清除搜索
+const clearSearch = () => {
+  searchQuery.value = ''
+  handleSearch()
 }
 
 // 处理文件操作
@@ -367,12 +599,40 @@ const formatDate = (timestamp: number): string => {
   @apply h-full flex flex-col bg-medical-bg-secondary;
 }
 
+.drag-upload-area {
+  @apply h-full flex items-center justify-center border-2 border-dashed border-medical-border transition-all duration-300;
+  min-height: 400px;
+}
+
+.drag-upload-area.drag-over {
+  @apply border-primary-400 bg-primary-500/5;
+}
+
+.drag-upload-content {
+  @apply text-center p-8;
+}
+
+.batch-actions {
+  @apply sticky top-0 z-10;
+}
+
 .file-item {
   position: relative;
+  user-select: none;
 }
 
 .file-item-active {
   @apply bg-primary-500/10 border-l-2 border-l-primary-500;
+}
+
+.file-item-selected {
+  @apply bg-success-500/10 border-l-2 border-l-success-500;
+}
+
+.file-item-active.file-item-selected {
+  @apply bg-gradient-to-r from-primary-500/10 to-success-500/10;
+  border-left: 2px solid;
+  border-image: linear-gradient(180deg, #0ea5e9, #10b981) 1;
 }
 
 .file-item-active::before {
@@ -385,6 +645,16 @@ const formatDate = (timestamp: number): string => {
   background: linear-gradient(180deg, #0ea5e9, #06b6d4);
 }
 
+.file-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #10b981, #059669);
+}
+
 .empty-state {
   @apply flex flex-col items-center justify-center h-full;
 }
@@ -392,5 +662,55 @@ const formatDate = (timestamp: number): string => {
 .file-info-dialog {
   max-height: 60vh;
   overflow-y: auto;
+}
+
+/* 上传进度动画 */
+.upload-progress {
+  @apply relative overflow-hidden;
+}
+
+.upload-progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* 拖拽提示动画 */
+.drag-upload-area .drag-upload-content {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* 文件选择动画 */
+.file-item {
+  transition: all 0.2s ease;
+}
+
+.file-item:hover {
+  transform: translateX(2px);
+}
+
+.file-item-selected {
+  animation: selectPulse 0.3s ease;
+}
+
+@keyframes selectPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 </style>

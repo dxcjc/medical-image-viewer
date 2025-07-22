@@ -7,11 +7,32 @@ const mockDicomImage = {
     patientName: 'Test Patient',
     patientId: 'TEST001',
     modality: 'CT',
-    studyDate: '20240101'
+    studyDate: '20240101',
+    sopInstanceUID: 'test-sop-instance-uid'
+  },
+  pixelDataInfo: {
+    data: new Uint8Array(512 * 512),
+    width: 512,
+    height: 512,
+    bitsAllocated: 16,
+    bitsStored: 16,
+    highBit: 15,
+    pixelRepresentation: 0,
+    samplesPerPixel: 1,
+    photometricInterpretation: 'MONOCHROME2',
+    transferSyntaxUID: '1.2.840.10008.1.2.1',
+    compressed: false,
+    frames: 1
   },
   pixelData: new Uint8Array(512 * 512),
   width: 512,
   height: 512,
+  frames: 1,
+  currentFrame: 0,
+  minPixelValue: 0,
+  maxPixelValue: 4095,
+  meanPixelValue: 1024,
+  standardDeviation: 512,
   canvas: (() => {
     const canvas = document.createElement('canvas')
     canvas.width = 512
