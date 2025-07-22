@@ -1,16 +1,16 @@
 <template>
-  <div class="header-component">
-    <div class="header-left">
-      <div class="logo">
-        <el-icon class="logo-icon"><Monitor /></el-icon>
-        <span class="logo-text">医学影像查看器</span>
+  <div class="flex items-center justify-between h-full px-5">
+    <div class="flex items-center">
+      <div class="flex items-center text-white text-lg font-bold">
+        <el-icon class="text-2xl mr-2 text-blue-400"><Monitor /></el-icon>
+        <span class="whitespace-nowrap">医学影像查看器</span>
       </div>
     </div>
 
-    <div class="header-center">
+    <div class="flex-1 flex justify-center">
       <el-menu
         :default-active="activeIndex"
-        class="header-menu"
+        class="border-b-0"
         mode="horizontal"
         background-color="#545c64"
         text-color="#fff"
@@ -32,7 +32,7 @@
       </el-menu>
     </div>
 
-    <div class="header-right">
+    <div class="flex items-center">
       <el-button type="primary" size="small" @click="openFileDialog">
         <el-icon><Upload /></el-icon>
         上传DICOM
@@ -77,59 +77,13 @@ const openFileDialog = () => {
 </script>
 
 <style scoped>
-.header-component {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 100%;
-  padding: 0 20px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.logo-icon {
-  font-size: 24px;
-  margin-right: 8px;
-  color: #409eff;
-}
-
-.logo-text {
-  white-space: nowrap;
-}
-
-.header-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-
-.header-menu {
-  border-bottom: none;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
 @media (max-width: 768px) {
   .logo-text {
-    display: none;
+    @apply hidden;
   }
 
   .header-menu .el-menu-item span {
-    display: none;
+    @apply hidden;
   }
 }
 </style>

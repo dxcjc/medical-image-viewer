@@ -1,17 +1,17 @@
 <template>
-  <el-container class="layout-container">
-    <el-header class="layout-header">
+  <el-container class="h-screen">
+    <el-header class="bg-gray-600 text-white p-0 leading-[60px]">
       <HeaderComponent />
     </el-header>
-    <el-container class="layout-body">
-      <el-aside v-if="showSidebar" class="layout-aside" width="200px">
+    <el-container class="flex-1">
+      <el-aside v-if="showSidebar" class="bg-gray-50 border-r border-gray-200" width="200px">
         <SidebarComponent />
       </el-aside>
-      <el-main class="layout-main">
+      <el-main class="p-0 bg-white">
         <slot name="main" />
       </el-main>
     </el-container>
-    <el-footer v-if="showFooter" class="layout-footer" height="40px">
+    <el-footer v-if="showFooter" class="bg-gray-50 border-t border-gray-200 text-center leading-10 text-gray-500 text-xs" height="40px">
       <FooterComponent />
     </el-footer>
   </el-container>
@@ -36,38 +36,4 @@ const showFooter = computed(() => {
 })
 </script>
 
-<style scoped>
-.layout-container {
-  height: 100vh;
-}
 
-.layout-header {
-  background: #545c64;
-  color: #fff;
-  padding: 0;
-  line-height: 60px;
-}
-
-.layout-body {
-  flex: 1;
-}
-
-.layout-aside {
-  background: #f5f7fa;
-  border-right: 1px solid #e4e7ed;
-}
-
-.layout-main {
-  padding: 0;
-  background: #fff;
-}
-
-.layout-footer {
-  background: #f5f7fa;
-  border-top: 1px solid #e4e7ed;
-  text-align: center;
-  line-height: 40px;
-  color: #909399;
-  font-size: 12px;
-}
-</style>

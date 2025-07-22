@@ -1,6 +1,6 @@
 <template>
-  <div class="sidebar-component">
-    <el-menu :default-active="activeIndex" class="sidebar-menu" @select="handleSelect">
+  <div class="h-full py-2">
+    <el-menu :default-active="activeIndex" class="border-r-0 h-full" @select="handleSelect">
       <el-menu-item-group title="导航">
         <el-menu-item index="/">
           <el-icon><House /></el-icon>
@@ -67,36 +67,4 @@ const handleHelp = () => {
 }
 </script>
 
-<style scoped>
-.sidebar-component {
-  height: 100%;
-  padding: 10px 0;
-}
 
-.sidebar-menu {
-  border-right: none;
-  height: 100%;
-}
-
-.sidebar-menu .el-menu-item-group__title {
-  padding-left: 20px;
-  font-size: 12px;
-  color: #909399;
-  font-weight: bold;
-}
-
-.sidebar-menu .el-menu-item {
-  height: 40px;
-  line-height: 40px;
-}
-
-.sidebar-menu .el-menu-item:hover {
-  background-color: #ecf5ff;
-  color: #409eff;
-}
-
-.sidebar-menu .el-menu-item.is-active {
-  background-color: #409eff;
-  color: #fff;
-}
-</style>

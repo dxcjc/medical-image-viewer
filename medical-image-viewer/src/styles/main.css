@@ -1,0 +1,108 @@
+/* Tailwind CSS 基础样式 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全局基础样式 */
+@layer base {
+  html, body {
+    @apply h-full font-sans text-sm leading-relaxed text-gray-800 bg-white;
+  }
+
+  #app {
+    @apply h-full;
+  }
+
+  /* 自定义滚动条样式 */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+}
+
+/* 医学影像专用组件样式 */
+@layer components {
+  .medical-viewer {
+    @apply bg-medical-bg text-medical-text;
+  }
+
+  .viewer-overlay {
+    @apply absolute bg-medical-overlay text-white px-3 py-2 rounded text-xs font-mono;
+  }
+
+  .viewer-crosshair {
+    @apply absolute pointer-events-none z-10;
+  }
+
+  .viewer-crosshair::before,
+  .viewer-crosshair::after {
+    content: "";
+    @apply absolute bg-medical-crosshair;
+  }
+
+  .viewer-crosshair::before {
+    @apply w-px h-screen left-1/2 -top-1/2;
+  }
+
+  .viewer-crosshair::after {
+    @apply h-px w-screen top-1/2 -left-1/2;
+  }
+
+  .measurement-overlay {
+    @apply absolute pointer-events-none z-[5];
+  }
+
+  .measurement-line {
+    stroke: #ffff00;
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .measurement-point {
+    fill: #ffff00;
+    stroke: #000000;
+    stroke-width: 1;
+  }
+
+  .measurement-text {
+    fill: #ffff00;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+}
+
+/* Element Plus 样式覆盖和工具类 */
+@layer utilities {
+  .mobile-hidden {
+    @apply md:block hidden;
+  }
+
+  .mobile-full-width {
+    @apply md:w-auto w-full;
+  }
+
+  .mobile-sm-hidden {
+    @apply sm:block hidden;
+  }
+
+  .no-print {
+    @apply print:hidden;
+  }
+
+  .print-full-width {
+    @apply print:w-full;
+  }
+}
