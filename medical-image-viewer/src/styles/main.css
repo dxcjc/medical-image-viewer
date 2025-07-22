@@ -3,44 +3,65 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 全局基础样式 */
+/* 现代化全局基础样式 */
 @layer base {
   html, body {
-    @apply h-full font-sans text-sm leading-relaxed text-gray-800 bg-white;
+    @apply h-full font-sans text-sm leading-relaxed text-medical-text-primary bg-medical-bg-primary;
+    font-feature-settings: 'liga' 1, 'kern' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   #app {
     @apply h-full;
   }
 
-  /* 自定义滚动条样式 */
+  /* 现代化滚动条样式 */
   ::-webkit-scrollbar {
     @apply w-2 h-2;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100 rounded;
+    @apply bg-medical-bg-secondary rounded-full;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 rounded;
+    @apply bg-gray-600 rounded-full transition-colors duration-200;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400;
+    @apply bg-primary-500;
+  }
+
+  /* 选择文本样式 */
+  ::selection {
+    @apply bg-primary-500/30 text-medical-text-primary;
+  }
+
+  /* 焦点样式 */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500/50 ring-offset-2 ring-offset-medical-bg-primary;
   }
 }
 
-/* 医学影像专用组件样式 */
+/* 现代化医学影像专用组件样式 */
 @layer components {
+  /* 主查看器容器 */
   .medical-viewer {
-    @apply bg-medical-bg text-medical-text;
+    @apply bg-medical-bg-primary text-medical-text-primary relative overflow-hidden;
+    background-image:
+      radial-gradient(circle at 25% 25%, rgba(14, 165, 233, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(14, 165, 233, 0.03) 0%, transparent 50%);
   }
 
+  /* 现代化覆盖层 */
   .viewer-overlay {
-    @apply absolute bg-medical-overlay text-white px-3 py-2 rounded text-xs font-mono;
+    @apply absolute bg-medical-overlay text-medical-text-primary px-4 py-2 rounded-lg text-xs font-mono backdrop-blur-sm border border-medical-border;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
 
+  /* 增强的十字线 */
   .viewer-crosshair {
     @apply absolute pointer-events-none z-10;
   }
@@ -48,7 +69,9 @@
   .viewer-crosshair::before,
   .viewer-crosshair::after {
     content: "";
-    @apply absolute bg-medical-crosshair;
+    @apply absolute;
+    background: linear-gradient(90deg, transparent 0%, #00d4ff 50%, transparent 100%);
+    filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.6));
   }
 
   .viewer-crosshair::before {
@@ -57,35 +80,75 @@
 
   .viewer-crosshair::after {
     @apply h-px w-screen top-1/2 -left-1/2;
+    background: linear-gradient(0deg, transparent 0%, #00d4ff 50%, transparent 100%);
   }
 
+  /* 现代化测量覆盖层 */
   .measurement-overlay {
     @apply absolute pointer-events-none z-[5];
   }
 
   .measurement-line {
-    stroke: #ffff00;
+    stroke: #ffd700;
     stroke-width: 2;
     fill: none;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
   }
 
   .measurement-point {
-    fill: #ffff00;
+    fill: #ffd700;
     stroke: #000000;
     stroke-width: 1;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
   }
 
   .measurement-text {
-    fill: #ffff00;
+    fill: #ffd700;
     font-size: 12px;
-    font-family: Arial, sans-serif;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
     text-anchor: middle;
     dominant-baseline: middle;
+    filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
+  }
+
+  /* 现代化卡片样式 */
+  .medical-card {
+    @apply bg-medical-bg-secondary border border-medical-border rounded-xl shadow-card backdrop-blur-sm;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
+  }
+
+  /* 现代化按钮样式 */
+  .medical-button {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 relative overflow-hidden;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.8) 0%, rgba(14, 165, 233, 0.6) 100%);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+  }
+
+  .medical-button:hover {
+    @apply shadow-glow transform scale-105;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.9) 0%, rgba(14, 165, 233, 0.7) 100%);
+  }
+
+  .medical-button:active {
+    @apply transform scale-95;
+  }
+
+  /* 工具栏样式 */
+  .medical-toolbar {
+    @apply bg-medical-bg-secondary/80 backdrop-blur-md border-b border-medical-border shadow-toolbar;
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
+  }
+
+  /* 侧边栏样式 */
+  .medical-sidebar {
+    @apply bg-medical-bg-secondary/90 backdrop-blur-md border-r border-medical-border;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
   }
 }
 
-/* Element Plus 样式覆盖和工具类 */
+/* 现代化工具类和Element Plus样式覆盖 */
 @layer utilities {
+  /* 响应式工具类 */
   .mobile-hidden {
     @apply md:block hidden;
   }
@@ -104,5 +167,140 @@
 
   .print-full-width {
     @apply print:w-full;
+  }
+
+  /* 现代化动画工具类 */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* 玻璃态效果 */
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
+
+  .glass-effect-dark {
+    @apply backdrop-blur-md bg-black/20 border border-white/10;
+  }
+
+  /* 渐变文本 */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  /* 发光效果 */
+  .glow-primary {
+    @apply shadow-glow;
+  }
+
+  .glow-strong {
+    @apply shadow-glow-strong;
+  }
+
+  /* 悬停效果 */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:transform hover:-translate-y-1;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-200 hover:shadow-glow;
+  }
+}
+
+/* Element Plus 组件样式覆盖 */
+@layer components {
+  /* 深色主题的 Element Plus 组件 */
+  .el-header {
+    @apply bg-medical-bg-secondary border-b border-medical-border;
+  }
+
+  .el-aside {
+    @apply bg-medical-bg-secondary border-r border-medical-border;
+  }
+
+  .el-main {
+    @apply bg-medical-bg-primary;
+  }
+
+  .el-footer {
+    @apply bg-medical-bg-secondary border-t border-medical-border text-medical-text-muted;
+  }
+
+  .el-card {
+    @apply bg-medical-bg-secondary border-medical-border;
+  }
+
+  .el-card__header {
+    @apply bg-medical-bg-tertiary border-b border-medical-border text-medical-text-primary;
+  }
+
+  .el-card__body {
+    @apply text-medical-text-secondary;
+  }
+
+  .el-menu {
+    @apply bg-transparent border-none;
+  }
+
+  .el-menu-item {
+    @apply text-medical-text-secondary hover:bg-medical-hover transition-colors duration-200;
+  }
+
+  .el-menu-item.is-active {
+    @apply text-primary-400 bg-primary-500/10;
+  }
+
+  .el-button--primary {
+    @apply bg-primary-500 border-primary-500 hover:bg-primary-600 hover:border-primary-600;
+  }
+
+  .el-input__wrapper {
+    @apply bg-medical-bg-tertiary border-medical-border;
+  }
+
+  .el-input__inner {
+    @apply text-medical-text-primary placeholder:text-medical-text-muted;
+  }
+}
+
+/* 自定义关键帧动画 */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }

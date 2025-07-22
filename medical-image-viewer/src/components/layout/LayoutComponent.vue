@@ -1,17 +1,20 @@
 <template>
-  <el-container class="h-screen">
-    <el-header class="bg-gray-600 text-white p-0 leading-[60px]">
+  <el-container class="h-screen bg-medical-bg-primary">
+    <el-header class="medical-toolbar p-0 h-16 shadow-toolbar">
       <HeaderComponent />
     </el-header>
     <el-container class="flex-1">
-      <el-aside v-if="showSidebar" class="bg-gray-50 border-r border-gray-200" width="200px">
+      <el-aside v-if="showSidebar" class="medical-sidebar animate-slide-in-left" width="240px">
         <SidebarComponent />
       </el-aside>
-      <el-main class="p-0 bg-white">
-        <slot name="main" />
+      <el-main class="p-0 bg-medical-bg-primary relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-medical-bg-primary via-medical-bg-primary to-medical-bg-secondary/50"></div>
+        <div class="relative z-10 h-full">
+          <slot name="main" />
+        </div>
       </el-main>
     </el-container>
-    <el-footer v-if="showFooter" class="bg-gray-50 border-t border-gray-200 text-center leading-10 text-gray-500 text-xs" height="40px">
+    <el-footer v-if="showFooter" class="medical-sidebar text-center h-10 flex items-center justify-center" height="40px">
       <FooterComponent />
     </el-footer>
   </el-container>

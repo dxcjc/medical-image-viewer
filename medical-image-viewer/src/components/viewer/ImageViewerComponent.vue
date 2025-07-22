@@ -1,47 +1,100 @@
 <template>
-  <div class="image-viewer-component">
-    <div class="viewer-container" ref="viewerContainer">
-      <div v-if="!hasImage" class="no-image-placeholder">
-        <el-icon class="placeholder-icon"><Picture /></el-icon>
-        <p>请上传DICOM文件开始查看</p>
-        <el-button type="primary" @click="openFileDialog">
-          <el-icon><Upload /></el-icon>
-          选择文件
-        </el-button>
-      </div>
-
-      <div v-else class="image-canvas" ref="imageCanvas">
-        <!-- 这里将集成Cornerstone.js渲染 -->
-        <div class="canvas-placeholder">
-          <p>影像渲染区域</p>
-          <p>（Cornerstone.js集成开发中...）</p>
+  <div class="image-viewer-component h-full relative">
+    <div class="viewer-container h-full" ref="viewerContainer">
+      <!-- 无影像状态 -->
+      <div v-if="!hasImage" class="no-image-placeholder h-full flex flex-col items-center justify-center">
+        <div class="text-center space-y-6">
+          <div class="w-24 h-24 bg-gradient-to-br from-primary-400/20 to-primary-600/20 rounded-full flex items-center justify-center mx-auto animate-glow-pulse">
+            <el-icon class="text-5xl text-primary-400"><Picture /></el-icon>
+          </div>
+          <div>
+            <h3 class="text-xl font-semibold text-medical-text-primary mb-2">开始影像查看</h3>
+            <p class="text-medical-text-muted mb-6">请上传DICOM文件开始查看医学影像</p>
+            <div class="space-y-3">
+              <el-button type="primary" size="large" class="medical-button" @click="openFileDialog">
+                <el-icon class="mr-2"><Upload /></el-icon>
+                选择DICOM文件
+              </el-button>
+              <div class="text-xs text-medical-text-muted">
+                支持 .dcm, .dicom 格式文件
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- 加载状态 -->
-      <div v-if="isLoading" class="loading-overlay">
-        <el-icon class="loading-icon"><Loading /></el-icon>
-        <p>正在加载影像...</p>
+      <!-- 影像显示区域 -->
+      <div v-else class="image-canvas h-full relative" ref="imageCanvas">
+        <!-- 影像渲染区域 -->
+        <div class="canvas-placeholder h-full flex items-center justify-center">
+          <div class="text-center space-y-4">
+            <div class="w-16 h-16 bg-gradient-to-br from-success-400/20 to-success-600/20 rounded-full flex items-center justify-center mx-auto">
+              <el-icon class="text-3xl text-success-400"><Monitor /></el-icon>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-medical-text-primary mb-2">影像渲染区域</h4>
+              <p class="text-medical-text-muted">Cornerstone.js 集成开发中...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 影像信息覆盖层 -->
+        <div class="viewer-overlay top-4 left-4">
+          <div class="text-xs space-y-1">
+            <div>患者: {{ imageInfo?.patientName || '张三' }}</div>
+            <div>序列: T1WI</div>
+            <div>层厚: 1.0mm</div>
+          </div>
+        </div>
+
+        <!-- 缩放信息覆盖层 -->
+        <div class="viewer-overlay top-4 right-4">
+          <div class="text-xs">
+            缩放: {{ zoomLevel }}%
+          </div>
+        </div>
+
+        <!-- 窗宽窗位信息覆盖层 -->
+        <div class="viewer-overlay bottom-4 left-4">
+          <div class="text-xs space-y-1">
+            <div>窗宽: {{ windowWidth }}</div>
+            <div>窗位: {{ windowCenter }}</div>
+          </div>
+        </div>
+
+        <!-- 鼠标位置信息覆盖层 -->
+        <div class="viewer-overlay bottom-4 right-4">
+          <div class="text-xs space-y-1">
+            <div>X: {{ mousePosition.x }}</div>
+            <div>Y: {{ mousePosition.y }}</div>
+            <div>像素值: {{ pixelValue }}</div>
+          </div>
+        </div>
       </div>
 
-      <!-- 错误状态 -->
-      <div v-if="error" class="error-overlay">
-        <el-icon class="error-icon"><WarningFilled /></el-icon>
-        <p>{{ error }}</p>
-        <el-button @click="clearError">重试</el-button>
+      <!-- 加载状态覆盖层 -->
+      <div v-if="isLoading" class="loading-overlay absolute inset-0 bg-medical-bg-primary/80 backdrop-blur-sm flex items-center justify-center z-20">
+        <div class="text-center space-y-4">
+          <el-icon class="text-4xl text-primary-400 animate-spin"><Loading /></el-icon>
+          <div>
+            <p class="text-lg font-medium text-medical-text-primary">正在加载影像...</p>
+            <p class="text-sm text-medical-text-muted">请稍候</p>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- 影像信息覆盖层 -->
-    <div v-if="imageInfo" class="image-info-overlay">
-      <div class="info-item">
-        <span>患者姓名: {{ imageInfo.patientName || 'N/A' }}</span>
-      </div>
-      <div class="info-item">
-        <span>检查日期: {{ imageInfo.studyDate || 'N/A' }}</span>
-      </div>
-      <div class="info-item">
-        <span>影像尺寸: {{ imageInfo.width }}x{{ imageInfo.height }}</span>
+      <!-- 错误状态覆盖层 -->
+      <div v-if="error" class="error-overlay absolute inset-0 bg-medical-bg-primary/80 backdrop-blur-sm flex items-center justify-center z-20">
+        <div class="text-center space-y-4">
+          <div class="w-16 h-16 bg-gradient-to-br from-danger-400/20 to-danger-600/20 rounded-full flex items-center justify-center mx-auto">
+            <el-icon class="text-3xl text-danger-400"><WarningFilled /></el-icon>
+          </div>
+          <div>
+            <p class="text-lg font-medium text-medical-text-primary mb-2">加载失败</p>
+            <p class="text-sm text-medical-text-muted mb-4">{{ error }}</p>
+            <el-button type="primary" @click="clearError">重新加载</el-button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -50,7 +103,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Picture, Upload, Loading, WarningFilled } from '@element-plus/icons-vue'
+import { Picture, Upload, Loading, WarningFilled, Monitor } from '@element-plus/icons-vue'
 
 // 响应式数据
 const viewerContainer = ref<HTMLElement>()
@@ -59,6 +112,13 @@ const hasImage = ref(false)
 const isLoading = ref(false)
 const error = ref<string>('')
 const imageInfo = ref<any>(null)
+
+// 查看器状态
+const zoomLevel = ref(100)
+const windowWidth = ref(400)
+const windowCenter = ref(40)
+const mousePosition = ref({ x: 0, y: 0 })
+const pixelValue = ref(0)
 
 // 生命周期
 onMounted(() => {
@@ -138,104 +198,19 @@ const clearError = () => {
 
 <style scoped>
 .image-viewer-component {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background: #000;
-}
-
-.viewer-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.no-image-placeholder {
-  text-align: center;
-  color: #909399;
-}
-
-.placeholder-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  color: #c0c4cc;
-}
-
-.image-canvas {
-  width: 100%;
-  height: 100%;
-  position: relative;
+  background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
 }
 
 .canvas-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #909399;
-  border: 2px dashed #c0c4cc;
-  border-radius: 8px;
+  border: 2px dashed rgba(14, 165, 233, 0.3);
+  border-radius: 12px;
   margin: 20px;
+  background: rgba(14, 165, 233, 0.02);
+  transition: all 0.3s ease;
 }
 
-.loading-overlay,
-.error-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  z-index: 10;
-}
-
-.loading-icon {
-  font-size: 48px;
-  margin-bottom: 20px;
-  animation: rotate 2s linear infinite;
-}
-
-.error-icon {
-  font-size: 48px;
-  margin-bottom: 20px;
-  color: #f56c6c;
-}
-
-.image-info-overlay {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  z-index: 5;
-}
-
-.info-item {
-  margin-bottom: 5px;
-}
-
-.info-item:last-child {
-  margin-bottom: 0;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.canvas-placeholder:hover {
+  border-color: rgba(14, 165, 233, 0.5);
+  background: rgba(14, 165, 233, 0.05);
 }
 </style>
