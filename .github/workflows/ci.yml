@@ -1,0 +1,121 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: medical-image-viewer/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd medical-image-viewer
+        npm ci
+    
+    - name: Run linting
+      run: |
+        cd medical-image-viewer
+        npm run lint:check
+    
+    - name: Run type checking
+      run: |
+        cd medical-image-viewer
+        npm run type-check
+    
+    - name: Run unit tests
+      run: |
+        cd medical-image-viewer
+        npm run test:unit
+    
+    - name: Build project
+      run: |
+        cd medical-image-viewer
+        npm run build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files-${{ matrix.node-version }}
+        path: medical-image-viewer/dist/
+
+  e2e-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: medical-image-viewer/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd medical-image-viewer
+        npm ci
+    
+    - name: Run E2E tests
+      run: |
+        cd medical-image-viewer
+        npm run test:e2e:ci
+    
+    - name: Upload E2E screenshots
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: cypress-screenshots
+        path: medical-image-viewer/cypress/screenshots/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test, e2e-test]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: medical-image-viewer/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd medical-image-viewer
+        npm ci
+    
+    - name: Build for production
+      run: |
+        cd medical-image-viewer
+        npm run build
+    
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: medical-image-viewer/dist

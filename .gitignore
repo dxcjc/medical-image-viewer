@@ -1,0 +1,78 @@
+# 依赖文件
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 构建输出
+dist/
+build/
+*.tsbuildinfo
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE 和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 日志文件
+logs/
+*.log
+
+# 运行时文件
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率报告
+coverage/
+*.lcov
+.nyc_output
+
+# 测试文件
+.cypress/
+cypress/videos/
+cypress/screenshots/
+
+# 临时文件
+tmp/
+temp/
+
+# 医学影像文件（通常很大，不应该提交到仓库）
+*.dcm
+*.dicom
+*.nii
+*.nii.gz
+*.mhd
+*.raw
+
+# 缓存文件
+.cache/
+.parcel-cache/
+
+# 自动生成的文件
+auto-imports.d.ts
+components.d.ts
+
+# 包管理器锁文件（根据团队约定选择保留一个）
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

@@ -1,0 +1,43 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "include": [
+    "env.d.ts",
+    "auto-imports.d.ts",
+    "src/**/*",
+    "src/**/*.vue",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "src/**/__tests__/*"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "sourceMap": true,
+    "resolveJsonModule": true
+  }
+}
