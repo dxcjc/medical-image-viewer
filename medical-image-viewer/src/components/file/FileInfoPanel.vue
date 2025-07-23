@@ -239,8 +239,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { ElMessage } from 'element-plus'
+// Vue APIs are auto-imported
+// ElMessage is auto-imported
 import {
   Document,
   Loading,
@@ -268,7 +268,7 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  refresh: [fileId: string]
+  (e: 'refresh', fileId: string): void
 }>()
 
 // 计算属性
@@ -396,7 +396,7 @@ const refreshFile = () => {
 
 <style scoped>
 .file-info-panel {
-  @apply h-full overflow-y-auto bg-medical-bg-secondary;
+  @apply h-full overflow-y-auto bg-gray-50;
 }
 
 .empty-state {
@@ -440,6 +440,6 @@ const refreshFile = () => {
 }
 
 .action-section {
-  @apply sticky bottom-0 bg-medical-bg-secondary;
+  @apply sticky bottom-0 bg-gray-50;
 }
 </style>

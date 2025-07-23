@@ -38,9 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+// Vue APIs and ElMessage are auto-imported
 import { House, View, Upload, Setting, InfoFilled, QuestionFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()

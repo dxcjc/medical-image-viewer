@@ -1,4 +1,5 @@
-import { DicomImage, DicomParser } from '../dicom/DicomParser'
+import type { DicomImage } from '../dicom/DicomParser'
+import { DicomParser } from '../dicom/DicomParser'
 
 export interface DicomFile {
   id: string

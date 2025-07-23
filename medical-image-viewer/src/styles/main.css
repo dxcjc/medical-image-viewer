@@ -34,11 +34,11 @@
 /* 医学影像专用组件样式 */
 @layer components {
   .medical-viewer {
-    @apply bg-medical-bg text-medical-text;
+    @apply bg-medical-bg-primary text-medical-text-primary;
   }
 
   .viewer-overlay {
-    @apply absolute bg-medical-overlay text-white px-3 py-2 rounded text-xs font-mono;
+    @apply absolute bg-black/70 text-white px-3 py-2 rounded text-xs font-mono;
   }
 
   .viewer-crosshair {
@@ -48,7 +48,7 @@
   .viewer-crosshair::before,
   .viewer-crosshair::after {
     content: "";
-    @apply absolute bg-medical-crosshair;
+    @apply absolute bg-yellow-400/80;
   }
 
   .viewer-crosshair::before {

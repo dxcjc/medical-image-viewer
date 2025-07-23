@@ -35,5 +35,3 @@ const showFooter = computed(() => {
   return route.name !== 'viewer' // 查看器页面不显示底部栏
 })
 </script>
-
-

@@ -49,7 +49,7 @@ export class ImageCacheManager {
     // 初始化压缩Canvas
     if (this.options.enableCompression) {
       this.compressionCanvas = document.createElement('canvas')
-      this.compressionContext = this.compressionCanvas.getContext('2d')
+      this.compressionContext = this.compressionCanvas.getContext('2d') || undefined
     }
 
     // 监听内存压力事件

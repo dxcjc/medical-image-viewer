@@ -1,4 +1,5 @@
-import { DicomImage, DicomParser } from '../dicom/DicomParser'
+import type { DicomImage } from '../dicom/DicomParser'
+import { DicomParser } from '../dicom/DicomParser'
 import { ImageInterpolation, InterpolationType } from './ImageInterpolation'
 import { ImageCacheManager } from './ImageCacheManager'
 
@@ -185,7 +186,14 @@ export class ImageViewerService {
   setViewportState(state: Partial<ViewportState>): void {
     this.viewport = { ...this.viewport, ...state }
     this.constrainViewport()
-    this.render()
+    this.queueRender()
+  }
+
+  /**
+   * 立即渲染（同步方法）
+   */
+  render(): void {
+    this.queueRender()
   }
   
   /**

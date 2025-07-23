@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ImageViewerService, RenderOptions } from '@/services/viewer/ImageViewerService'
+import { ImageViewerService } from '@/services/viewer/ImageViewerService'
+import type { RenderOptions } from '@/services/viewer/ImageViewerService'
 import { InterpolationType } from '@/services/viewer/ImageInterpolation'
 
 describe('ImageViewerService', () => {

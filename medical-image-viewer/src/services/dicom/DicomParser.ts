@@ -197,7 +197,7 @@ export const DEFAULT_PARSE_OPTIONS: DicomParseOptions = {
   generateHistogram: false,
   extractOverlays: false,
   extractAnnotations: false,
-  maxMemoryUsage: 512, // 512MB
+  maxMemoryUsage: 512 // 512MB
 }
 
 export class DicomParser {
@@ -404,7 +404,7 @@ export class DicomParser {
       throw new Error(`DICOM文件解析失败: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
-  
+
   /**
    * 读取文件片段
    */
@@ -558,7 +558,7 @@ export class DicomParser {
       dbDt: getNumber('x00180207')
     }
   }
-  
+
   /**
    * 提取像素数据信息
    */
@@ -608,7 +608,7 @@ export class DicomParser {
       TRANSFER_SYNTAXES.RLE_LOSSLESS
     ]
 
-    return compressedSyntaxes.includes(transferSyntaxUID)
+    return compressedSyntaxes.some(syntax => syntax === transferSyntaxUID)
   }
 
   /**
@@ -726,7 +726,7 @@ export class DicomParser {
       throw new Error(`不支持的位深度: ${bitsAllocated}`)
     }
   }
-  
+
   /**
    * 计算像素统计信息
    */
@@ -938,7 +938,7 @@ export class DicomParser {
       rgbaData[rgbaIndex + 3] = 255 // A
     }
   }
-  
+
   /**
    * 创建增强的Canvas元素
    */
@@ -999,7 +999,7 @@ export class DicomParser {
 
     return descriptions[transferSyntaxUID] || `Unknown (${transferSyntaxUID})`
   }
-  
+
   /**
    * 应用增强的窗宽窗位调整
    */

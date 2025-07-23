@@ -227,8 +227,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+// Vue APIs are auto-imported
+// ElMessage and ElMessageBox are auto-imported
 import {
   Upload,
   Delete,
@@ -252,7 +252,7 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  fileSelected: [fileId: string]
+  (e: 'file-selected', fileId: string): void
 }>()
 
 // 响应式数据
@@ -429,7 +429,7 @@ const selectFile = (fileId: string, event?: MouseEvent) => {
     // 普通点击：单选
     selectedFiles.value = []
     props.fileManager.setCurrentFile(fileId)
-    emit('fileSelected', fileId)
+    emit('file-selected', fileId)
   }
 }
 

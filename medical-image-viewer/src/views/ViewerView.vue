@@ -141,8 +141,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+// Vue APIs are auto-imported
+// ElMessage is auto-imported
 import LayoutComponent from '@/components/layout/LayoutComponent.vue'
 import ToolbarComponent from '@/components/tools/ToolbarComponent.vue'
 import ImageViewerComponent from '@/components/viewer/ImageViewerComponent.vue'

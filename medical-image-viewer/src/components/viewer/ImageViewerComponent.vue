@@ -37,9 +37,9 @@
         <!-- 影像信息覆盖层 -->
         <div class="viewer-overlay top-4 left-4">
           <div class="text-xs space-y-1">
-            <div>患者: {{ imageInfo?.patientName || 'Unknown' }}</div>
-            <div>模态: {{ imageInfo?.modality || 'N/A' }}</div>
-            <div>尺寸: {{ imageInfo?.columns }}×{{ imageInfo?.rows }}</div>
+            <div>患者: {{ imageInfo && imageInfo.patientName || 'Unknown' }}</div>
+            <div>模态: {{ imageInfo && imageInfo.modality || 'N/A' }}</div>
+            <div>尺寸: {{ imageInfo && imageInfo.columns }}×{{ imageInfo && imageInfo.rows }}</div>
           </div>
         </div>
 
@@ -97,8 +97,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+// Vue APIs are auto-imported
+// ElMessage is auto-imported
 import { Picture, Upload, Loading, WarningFilled } from '@element-plus/icons-vue'
 import { DicomParser, DicomImage } from '@/services/dicom/DicomParser'
 import { ImageViewerService, ViewportState } from '@/services/viewer/ImageViewerService'

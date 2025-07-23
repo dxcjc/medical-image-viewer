@@ -111,8 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+// ElMessage is auto-imported
 import {
   FolderOpened,
   Download,
@@ -130,13 +129,13 @@ import {
 
 // Emits
 const emit = defineEmits<{
-  toolChanged: [tool: string]
-  openFile: []
-  saveImage: []
-  resetView: []
-  fitToWindow: []
-  toggleInvert: []
-  showImageInfo: []
+  (e: 'tool-changed', tool: string): void
+  (e: 'open-file'): void
+  (e: 'save-image'): void
+  (e: 'reset-view'): void
+  (e: 'fit-to-window'): void
+  (e: 'toggle-invert'): void
+  (e: 'show-image-info'): void
 }>()
 
 // Props
@@ -155,7 +154,7 @@ const setActiveTool = (tool: string) => {
   ElMessage.info(`切换到${getToolName(tool)}工具`)
 
   // 通知父组件工具切换
-  emit('toolChanged', tool)
+  emit('tool-changed', tool)
 }
 
 // 获取工具名称
@@ -173,28 +172,28 @@ const getToolName = (tool: string): string => {
 
 // 文件操作
 const openFile = () => {
-  emit('openFile')
+  emit('open-file')
 }
 
 const saveImage = () => {
-  emit('saveImage')
+  emit('save-image')
 }
 
 // 视图操作
 const resetView = () => {
-  emit('resetView')
+  emit('reset-view')
 }
 
 const fitToWindow = () => {
-  emit('fitToWindow')
+  emit('fit-to-window')
 }
 
 const toggleInvert = () => {
-  emit('toggleInvert')
+  emit('toggle-invert')
 }
 
 const showImageInfo = () => {
-  emit('showImageInfo')
+  emit('show-image-info')
 }
 </script>
 
