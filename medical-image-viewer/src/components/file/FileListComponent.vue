@@ -1,52 +1,89 @@
 <template>
   <div class="file-list-component h-full flex flex-col">
-    <!-- 头部操作栏 -->
-    <div class="file-list-header p-3 md:p-4 border-b border-medical-border bg-white sticky top-0 z-10">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base md:text-lg font-semibold text-medical-text-primary truncate">
-          文件列表
-        </h3>
-        <div class="flex items-center space-x-1 md:space-x-2">
-          <!-- 移动端简化按钮 -->
-          <el-tooltip content="上传DICOM文件" placement="top">
-            <el-button
-              type="primary"
-              :size="isMobile ? 'small' : 'default'"
+    <!-- 增强的头部操作栏 -->
+    <header class="file-list-header" :class="headerClasses">
+      <!-- 主标题区域 -->
+      <div class="header-main">
+        <div class="flex items-center justify-between">
+          <div class="header-title-section">
+            <h2 class="header-title">
+              <el-icon class="header-icon"><FolderOpened /></el-icon>
+              文件管理器
+            </h2>
+            <p class="header-subtitle">
+              管理和查看DICOM医学影像文件
+            </p>
+          </div>
+
+          <!-- 主要操作按钮 -->
+          <div class="header-actions">
+            <BaseButton
+              variant="primary"
+              :size="buttonSize"
               @click="uploadFiles"
               :loading="isUploading"
+              shortcut="Ctrl+O"
+              :show-shortcut="!isMobile"
+              aria-label="上传DICOM文件"
             >
-              <el-icon><Upload /></el-icon>
-              <span class="mobile-hidden ml-1">上传</span>
-            </el-button>
-          </el-tooltip>
+              <template #icon>
+                <el-icon><Upload /></el-icon>
+              </template>
+              <span class="mobile-hidden">上传文件</span>
+            </BaseButton>
 
-          <!-- 更多操作下拉菜单 -->
-          <el-dropdown @command="handleMoreActions" trigger="click">
-            <el-button :size="isMobile ? 'small' : 'default'">
-              <el-icon><MoreFilled /></el-icon>
-              <span class="mobile-hidden ml-1">更多</span>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="batchUpload">
-                  <el-icon><FolderOpened /></el-icon>
-                  批量上传
-                </el-dropdown-item>
-                <el-dropdown-item command="clearFiles" :disabled="files.length === 0">
-                  <el-icon><Delete /></el-icon>
-                  清空列表
-                </el-dropdown-item>
-                <el-dropdown-item command="exportList" :disabled="files.length === 0">
-                  <el-icon><Download /></el-icon>
-                  导出列表
-                </el-dropdown-item>
-                <el-dropdown-item command="refresh">
-                  <el-icon><Refresh /></el-icon>
-                  刷新
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+            <!-- 更多操作菜单 -->
+            <el-dropdown
+              @command="handleMoreActions"
+              trigger="click"
+              placement="bottom-end"
+            >
+              <BaseButton
+                variant="secondary"
+                :size="buttonSize"
+                aria-label="更多操作"
+              >
+                <template #icon>
+                  <el-icon><MoreFilled /></el-icon>
+                </template>
+                <span class="mobile-hidden">更多</span>
+              </BaseButton>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="batchUpload">
+                    <el-icon><FolderOpened /></el-icon>
+                    <span>批量上传</span>
+                    <kbd class="dropdown-shortcut">Ctrl+Shift+O</kbd>
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    command="clearFiles"
+                    :disabled="files.length === 0"
+                  >
+                    <el-icon><Delete /></el-icon>
+                    <span>清空列表</span>
+                    <kbd class="dropdown-shortcut">Ctrl+Shift+D</kbd>
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    command="exportList"
+                    :disabled="files.length === 0"
+                  >
+                    <el-icon><Download /></el-icon>
+                    <span>导出列表</span>
+                    <kbd class="dropdown-shortcut">Ctrl+E</kbd>
+                  </el-dropdown-item>
+                  <el-dropdown-item command="refresh">
+                    <el-icon><Refresh /></el-icon>
+                    <span>刷新列表</span>
+                    <kbd class="dropdown-shortcut">F5</kbd>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided command="settings">
+                    <el-icon><Setting /></el-icon>
+                    <span>列表设置</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
       </div>
 

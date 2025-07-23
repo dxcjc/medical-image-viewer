@@ -1,8 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { ElMessage } from 'element-plus'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { mount, VueWrapper } from '@vue/test-utils'
+import { nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import FileListComponent from '@/components/file/FileListComponent.vue'
 import { FileManagerService } from '@/services/file/FileManagerService'
+import { useUIStore } from '@/stores/ui'
+import { performanceAnalyzer } from '@/utils/performance-analyzer'
 
 // Mock Element Plus
 vi.mock('element-plus', () => ({
@@ -13,7 +17,7 @@ vi.mock('element-plus', () => ({
     info: vi.fn()
   },
   ElMessageBox: {
-    confirm: vi.fn()
+    confirm: vi.fn().mockResolvedValue(true)
   }
 }))
 
@@ -23,6 +27,16 @@ vi.mock('@vueuse/core', () => ({
     width: { value: 1024 },
     height: { value: 768 }
   })
+}))
+
+// Mock performance analyzer
+vi.mock('@/utils/performance-analyzer', () => ({
+  performanceAnalyzer: {
+    startMeasure: vi.fn().mockReturnValue('test-id'),
+    endMeasure: vi.fn().mockReturnValue(100),
+    recordInteraction: vi.fn(),
+    recordImageLoad: vi.fn()
+  }
 }))
 
 // Mock FileManagerService

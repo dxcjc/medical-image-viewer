@@ -1,7 +1,50 @@
-/* Tailwind CSS 基础样式 */
+/* 医疗图像查看器增强样式系统 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* CSS自定义属性 - 设计令牌 */
+:root {
+  /* 医疗专用色彩 */
+  --medical-bg: #0a0a0a;
+  --medical-bg-secondary: #1a1a1a;
+  --medical-bg-tertiary: #2a2a2a;
+  --medical-text: #ffffff;
+  --medical-text-secondary: #e5e5e5;
+  --medical-text-muted: #a3a3a3;
+  --medical-measurement: #fbbf24;
+  --medical-annotation: #10b981;
+  --medical-crosshair: #ef4444;
+  --medical-overlay: rgba(0, 0, 0, 0.8);
+  --medical-highlight: rgba(59, 130, 246, 0.3);
+  --medical-selection: rgba(16, 185, 129, 0.2);
+
+  /* 响应式断点 */
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* 动画时长 */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  /* 缓动函数 */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Z-index层级 */
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-overlay: 1300;
+  --z-modal: 1400;
+  --z-tooltip: 1800;
+}
 
 /* 全局基础样式 */
 @layer base {
